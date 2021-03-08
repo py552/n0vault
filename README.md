@@ -18,20 +18,17 @@ Vault for secure storage of passwords and other sensitive data
       -s XPATH, --show XPATH
                             show value for the KEY
 ## Sample of usage:
-python -m n0vault -d -v my_vault.file -u group/subgroup/key1 value1
-python -m n0vault -d -v my_vault.file -u group/subgroup/key2 value2
-python -m n0vault -d -v my_vault.file -u group/subgroup/key3 value3
-python -m n0vault -d -v my_vault.file -s group/subgroup/key1
-python -m n0vault -d -v my_vault.file -s group/subgroup/key2
-python -m n0vault -d -v my_vault.file -s group/subgroup/key3
-python -m n0vault -d -v my_vault.file -s *
-python -m n0vault -v my_vault.file -e
-python -m n0vault -v my_vault.file -d
-python -m n0vault -v my_vault.file -e -p Pa$$w0rD
-python -m n0vault -v my_vault.file -d -p Pa$$w0rD -s *
-
-
-
+    python -m n0vault -d -v my_vault.file -u group/subgroup/key1 value1
+    python -m n0vault -d -v my_vault.file -u group/subgroup/key2 value2
+    python -m n0vault -d -v my_vault.file -u group/subgroup/key3 value3
+    python -m n0vault -d -v my_vault.file -s group/subgroup/key1
+    python -m n0vault -d -v my_vault.file -s group/subgroup/key2
+    python -m n0vault -d -v my_vault.file -s group/subgroup/key3
+    python -m n0vault -d -v my_vault.file -s *
+    python -m n0vault -v my_vault.file -e
+    python -m n0vault -v my_vault.file -d
+    python -m n0vault -v my_vault.file -e -p Pa$$w0rD
+    python -m n0vault -v my_vault.file -d -p Pa$$w0rD -s *
 
 ## Usage from the python code:
     import os
@@ -52,17 +49,17 @@ python -m n0vault -v my_vault.file -d -p Pa$$w0rD -s *
 
     my_vault.save()
 ## Result of the execution:
-value1
-value2
-value3
-Not exists
-{
-    "__sign": "n0Vault1",
-    "group": {
-        "subgroup": {
-            "key1": "value1",
-            "key2": "value2",
-            "key3": "value3"
+    value1
+    value2
+    value3
+    Not exists
+    {
+        "__sign": "n0Vault1",
+        "group": {
+            "subgroup": {
+                "key1": "value1",
+                "key2": "value2",
+                "key3": "value3"
+            }
         }
     }
-}
