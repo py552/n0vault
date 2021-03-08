@@ -4,6 +4,7 @@ NAME
     n0vault - # 0.01 = 2021-03-06 = Initial version
 
 PACKAGE CONTENTS
+    __main__
     test (package)
 
 CLASSES
