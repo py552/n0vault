@@ -253,7 +253,6 @@ class n0Vault(dict):
                 self._encrypted = self.__vault_file_is_encrypted
             if self._encrypted:
                 if self.__password:
-                    n0debug_calc(self.__flags, "self.__flags")
                     self.__flags = self.set_bits(bytes_array = self.__flags, bits_value = 0b01, bits_len = 2, bits_offset = 0)
                     cipher = AES.new(
                         PBKDF2(self.__password, self.__key[:16]).read(32),          # Generate 256-bit key
