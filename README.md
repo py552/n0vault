@@ -1,22 +1,30 @@
 # n0vault
-Vault for secure storage of passwords and other sensitive data
+	Vault for secure storage of passwords and other sensitive data
 
 ## Usage from the command line:
-    python -m n0vault [-h] [-v VAULT_FILE] [-e] [-p PASSWORD] [-d] [-u KEY VALUE] [-r KEY] [-s XPATH]
+	python -m n0vault [-h] [-v VAULT_FILE] [-e] [-p PASSWORD] [-d]
+				   [-u [XPATH [VALUE ...]]] [-f] [-r XPATH] [-s XPATH]
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      -v VAULT_FILE, --vault VAULT_FILE
-                            use VAULT_FILE as storage. By default: 'n0vault.vault'
-      -e, --encrypt         save into ENCRYPTED vault file
-      -p PASSWORD, --password PASSWORD
-                            use password
-      -d, --decrypt         save into DECRYPTED vault file
-      -u KEY VALUE, --update KEY VALUE
-                            add/update value for the key
-      -r KEY, --remove KEY  remove KEY with value
-      -s XPATH, --show XPATH
-                            show value for the KEY
+	optional arguments:
+	  -h, --help            show this help message and exit
+	  -v VAULT_FILE, --vault VAULT_FILE
+							use VAULT_FILE as storage. By default:
+							'default.n0vault'
+	  -e, --encrypt         save into ENCRYPTED vault file
+	  -p PASSWORD, --password PASSWORD
+							use PASSWORD
+	  -d, --decrypt         save into DECRYPTED vault file
+	  -u [XPATH [VALUE]], --update [XPATH [VALUE]]
+							add/update VALUE for the XPATH, if VALUE or both
+							XPATH/VALUE are not defined, they should be entered
+							manually without showing the VALUE
+	  -f, --forbid          forbid to show/decrypt storage by standard
+							functionality
+	  -r XPATH, --remove XPATH
+							remove item with XPATH
+	  -s XPATH, --show XPATH
+							show value for the XPATH
+
 ## Sample of usage:
     python -m n0vault -d -v my_vault.file -u group/subgroup/key1 value1
     python -m n0vault -d -v my_vault.file -u group/subgroup/key2 value2
@@ -48,6 +56,7 @@ Vault for secure storage of passwords and other sensitive data
     print(my_vault.show())
 
     my_vault.save()
+	
 ## Result of the execution:
     value1
     value2

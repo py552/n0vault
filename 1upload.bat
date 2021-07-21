@@ -3,8 +3,9 @@
 REM python -m pip install --upgrade pip
 REM python -m pip install --upgrade setuptools wheel
 REM python -m pip install twine
-REM python -m pip install venv
 REM python -m pip install keyring
+REM echo XXX | keyring set pypi pythonist552-test
+REM echo YYY | keyring set pypi pythonist552
 ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :: Unit testing before building
 echo **********************************************************************
@@ -46,6 +47,7 @@ call :init_credentials
 echo **********************************************************************
 echo *** twine upload --username %USERNAME% --password XXX %test_upload% dist/*
 echo **********************************************************************
+if "%PASSWORD%"=="" echo PASSWORD for pypi is not set. Continue is terminated. && exit
 python -m twine upload --username %USERNAME% --password %PASSWORD% %test_upload% dist/*
 call :clean
 

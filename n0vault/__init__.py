@@ -1,4 +1,5 @@
 # 0.01 = 2021-03-06 = Initial version
+# 0.02 = 2021-07-19 = Added functionality to enter sensitive data without easy retrieving
 import os
 import base64
 
@@ -9,7 +10,6 @@ from Crypto.Hash import SHA256
 from pbkdf2 import PBKDF2
 # ##################################################################################################
 from n0struct import *
-# __DEBUG__ = True
 # ##################################################################################################
 class n0Vault(dict):
     _encrypted = False
@@ -31,15 +31,17 @@ class n0Vault(dict):
     __flags = 0b0000_0000_0000_0000_0000_0000_0000_0000
     # Memory:   wwww_wwww_xxxx_xxxx_yyyy_yyyy_zzzz_zzzz
     #           ││││ ││││ ││││ ││││ ││││ ││││ ││││ ││││
-    #           └┴┴┴─┴┴┴┴─┴┴┴┴─┴┴┴┴─┴┴┴┴─┴┴┴┴─┴┴┴┴─┴┤└┤
-    #                                               │ │
-    #                                               │ └─── 00 = AES encryption without password:
-    #                                               │               static 256-bit Key (self.__key)
-    #                                               │               + variable 128-bit Initialization Vector
-    #                                               │      01 = AES encryption WITH password:
-    #                                               │               static 256-bit Key (self.__key)
-    #                                               │               + variable 128-bit Initialization Vector
-    #                                               └───── reserved for future usage
+    #           └┴┴┴─┴┴┴┴─┴┴┴┴─┴┴┴┴─┴┴┴┴─┴┴┴┴─┴┴┴┴─┤│└┤
+    #                                              ││ │
+    #                                              ││ └─── 00 = AES encryption without password:
+    #                                              ││               static 256-bit Key (self.__key)
+    #                                              ││               + variable 128-bit Initialization Vector
+    #                                              ││      01 = AES encryption WITH password:
+    #                                              ││               static 256-bit Key (self.__key)
+    #                                              ││               + variable 128-bit Initialization Vector
+    #                                              │└───── 0  = possible to view and decrypt
+    #                                              │       1  = viewing/decryption is not allowed
+    #                                              └────── reserved for future usage
     #>> iv      16 bytes unique 16 bytes, generated every time during saving
     #>> sha256  32 bytes control sum of iv+buffer before encryption
     #   __vault .. bytes encrypted with AES
@@ -56,6 +58,14 @@ class n0Vault(dict):
         password: str = None,
         key = None
     ):
+        """
+        Constructor for n0Vault
+        
+        vault_file_name: str = None,    storage file name
+        encrypted = True,               save as encrypted by default
+        password: str = None,           password will be used during saving
+        key = None                      256-bit Key encrypted with base64
+        """
         if not vault_file_name:
             vault_file_name = os.path.splitext(os.path.split(__file__)[1])[0] + ".vault"
         self._encrypted = encrypted
@@ -65,46 +75,106 @@ class n0Vault(dict):
         self.load(vault_file_name)
     # **********************************************************************************************
     def __setitem__(self, xpath: str, new_value):
+        """
+        Public operator: isntance[xpath] = new_value
+        
+        Update isntance._vault with {xpath:new_value}
+        """
         self._vault[xpath] = new_value
         return new_value
     # **********************************************************************************************
     def update(self, xpath: typing.Union[dict, str], new_value: str = None) -> dict:
-        return self._vault.update(xpath, new_value)
+        """
+        Public method: isntance.update(xpath: typing.Union[dict, str], new_value: str = None)
+        
+        Update isntance._vault with {xpath:new_value} or {xpath as a dictionary}
+        """
+        if isinstance(xpath, (dict, n0dict)):
+            self._vault.update(xpath)
+        elif isinstance(xpath, str):
+            self._vault.update({xpath: new_value})
+        else:
+            raise TypeError(f"Expected: xpath: typing.Union[dict, str], new_value: str\nReceived: {type(xpath)=}, {type(new_value)=}")
+            
+        return self._vault
     # **********************************************************************************************
     def delete(self, xpath) -> dict:
+        """
+        Public method: isntance.delete(xpath)
+        
+        Delete item 'xpath' from isntance._vault
+        """
         return self._vault.delete(xpath)
     # **********************************************************************************************
     def pop(self, xpath) -> dict:
+        """
+        Public method: isntance.pop(xpath)
+        
+        Return value associated with 'xpath' and delete item 'xpath' from isntance._vault
+        """
         return self._vault.pop(xpath)
     # **********************************************************************************************
-    def show(self) -> dict:
-        return json.dumps(self._vault, indent = 4)
+    def show(self, start_from = None) -> dict:
+        """
+        Public method: isntance.show(start_from = None)
+        
+        Return json structure of isntance._vault or isntance._vault[start_from]
+        """
+        return json.dumps(self._vault[start_from] if start_from else self._vault, indent = 4)
     # **********************************************************************************************
-    def set_bits(
-        self,
-        flag: int,
-        bit_offset: int = 0,
-        binary_mask: int = 0b1,
-        bit_value: int = 0b1,
-    ) -> bool:
-        return flag & binary_mask << bit_offset | bit_value
+    def set_bits(self, bytes_array: int, bits_value: int, bits_len: int = 1, bits_offset: int = 0, bits_in_bytes: int = 32) -> int:
+        """
+        Public method: isntance.set_bits(bytes_array: int, bits_value: int, bits_len: int = 1, bits_offset: int = 0, bits_in_bytes: int = 32)
+        
+        Apply bits_value to bits_offset of bytes_array
+        
+        1) Prepare all bits mask depends of bits_in_bytes (bytes_array size): 0xFF, 0xFFFF, 0xFFFFFFFF
+            bits_in_bytes =  8              => bits_mask = b0000_0000__0000_0000___0000_0000__1111_1111
+            bits_in_bytes = 16              => bits_mask = b0000_0000__0000_0000___1111_1111__1111_1111
+            bits_in_bytes = 32              => bits_mask = b1111_1111__1111_1111___1111_1111__1111_1111
+        
+        2) Prepare the mask for bits place clearing, depends of bits_len and bits_offset
+            bits_len = 1, bits_offset = 0   => b0000_0000__0000_0000___0000_0000__0000_0001 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1111_1110
+            bits_len = 2, bits_offset = 0   => b0000_0000__0000_0000___0000_0000__0000_0011 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1111_1100
+            bits_len = 3, bits_offset = 0   => b0000_0000__0000_0000___0000_0000__0000_0111 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1111_1000
+            bits_len = 8, bits_offset = 0   => b0000_0000__0000_0000___0000_0000__1111_1111 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__0000_0000
+                                                                                                                                                             
+            bits_len = 1, bits_offset = 4   => b0000_0000__0000_0000___0000_0000__0001_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1110_1111
+            bits_len = 2, bits_offset = 4   => b0000_0000__0000_0000___0000_0000__0011_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1100_1111
+            bits_len = 3, bits_offset = 4   => b0000_0000__0000_0000___0000_0000__0111_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1000_1111
+            bits_len = 8, bits_offset = 4   => b0000_0000__0000_0000___0000_1111__1111_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_0000__0000_1111
+            
+        3) Clearing the bits place 
+        
+        4) Update the cleared place with bits_value
+        """
+        all_bits_mask = (1 << bits_in_bytes) - 1
+        clear_bits_mask = all_bits_mask ^ (( (1 << bits_len) - 1) << bits_offset)
+        bytes_array &= clear_bits_mask
+        bytes_array |= bits_value << bits_offset
+        return bytes_array
     # **********************************************************************************************
     def is_bit_set(
         self,
-        flag: int,
         bit_offset: int = 0,
         binary_mask: int = 0b1,
-    ) -> bool:
-        return flag & binary_mask << bit_offset != 0
+        bytes_array: int = None
+    ) -> int:
+        """
+        Public method: isntance.is_bit_set(bit_offset: int = 0, binary_mask: int = 0b1, bytes_array: int = None) -> int:
+        
+        Return bits' set from bit_offset of bytes_array/self.__flags and applied binary_mask
+        """
+        return ((bytes_array or self.__flags) >> bit_offset) & binary_mask
     # **********************************************************************************************
     def load(self, vault_file_name: str):
+        """
+        Public method: isntance.load(vault_file_name: str):
+
+        Load 'vault_file_name' and decrypt it if it was encrypted.
+        """
         def read_buffer(len_to_read = None, name = None):
-            buffer = in_file.read(len_to_read)
-            if globals().get("__DEBUG__"):
-                n0debug("len_to_read")
-                n0debug_calc(buffer, name)
-                n0print(len(buffer))
-            return buffer
+            return in_file.read(len_to_read)
 
         self.vault_file_name = vault_file_name
         if os.path.exists(self.vault_file_name):
@@ -126,9 +196,9 @@ class n0Vault(dict):
                     control_sum = read_buffer(32, "control_sum")
                     # ******************************************************************************
                     # ******************************************************************************
-                    if self.is_bit_set(self.__flags, 0, 0b11) == 0b00:
+                    if self.is_bit_set(0, 0b11) == 0b00:
                         cipher = AES.new(self.__key, AES.MODE_CBC, cipher_iv)
-                    elif self.is_bit_set(self.__flags, 0, 0b11) == 0b01:
+                    elif self.is_bit_set(0, 0b11) == 0b01:
                         if not self.__password:
                             raise Exception(f"Password for loading is required")
                         cipher = AES.new(
@@ -153,7 +223,6 @@ class n0Vault(dict):
                     calculated_control_sum = SHA256.new(data=cipher_iv + buffer).digest()
                     if control_sum != calculated_control_sum:
                         raise Exception(f"Incorrect control sum of n0Vault storage")
-                    # self._vault = json.loads(buffer)
                     self._vault = n0dict(buffer.decode("utf-8"))
 
                 if self._vault.get("__sign") != self.__sign:
@@ -162,16 +231,21 @@ class n0Vault(dict):
             self._vault = n0dict({"__sign": self.__sign})
         return self._vault
     # **********************************************************************************************
-    def save(self, new_vault_file_name: str = None):
+    def save(self, new_vault_file_name: str = None, forbid_next_saving = False):
+        """
+        Public method: isntance.save(new_vault_file_name: str = None, forbid_next_saving = False):
+
+        Save file depends of self._encrypted flag into encrypted or decrypted format.
+        if 3rd bit in self.__flags is already set previously, then Exception will be raised -- saving is forbidden.
+        """
+        if self.is_bit_set(2, 0b1):
+            raise Exception(f"Saving of such n0Vault storage is forbidden")
         # ******************************************************************************************
         def write_buffer(buffer, name):
             if isinstance(buffer, str):
                 buffer = buffer.encode("utf-8")             # str -> bytes
             if isinstance(buffer, int):
                 buffer = buffer.to_bytes(4, 'little')       # int32 -> bytes
-            if globals().get("__DEBUG__"):
-                n0debug_calc(buffer, name)
-                n0print(len(buffer))
             out_file.write(buffer)
         # ******************************************************************************************
         with open(new_vault_file_name or self.vault_file_name, "wb") as out_file:
@@ -179,17 +253,19 @@ class n0Vault(dict):
                 self._encrypted = self.__vault_file_is_encrypted
             if self._encrypted:
                 if self.__password:
-                    self.__flags = self.set_bits(self.__flags, 0, 0b11, 0b01)
+                    n0debug_calc(self.__flags, "self.__flags")
+                    self.__flags = self.set_bits(bytes_array = self.__flags, bits_value = 0b01, bits_len = 2, bits_offset = 0)
                     cipher = AES.new(
                         PBKDF2(self.__password, self.__key[:16]).read(32),          # Generate 256-bit key
                         AES.MODE_CBC
                     )
                 else:
                     cipher = AES.new(self.__key, AES.MODE_CBC)
-                write_buffer(self.__sign,   "sign")
-                write_buffer(self.__flags,  "flags")
-                write_buffer(cipher.iv,     "cipher.iv")
-                # buffer = json.dumps(self._vault).encode("utf-8")                   # str -> bytes
+                write_buffer(self.__sign,  "sign")
+                if forbid_next_saving:
+                    self.__flags = self.set_bits(bytes_array = self.__flags, bits_value = 0b1, bits_len = 1, bits_offset = 2)
+                write_buffer(self.__flags, "flags")
+                write_buffer(cipher.iv,    "cipher.iv")
                 buffer = n0pretty(self._vault, show_type=False, __indent_size = 0).encode("utf-8") # str -> bytes
                 write_buffer(SHA256.new(data=cipher.iv + buffer).digest(), "control_sum")
                 write_buffer(
@@ -207,17 +283,17 @@ class n0Vault(dict):
     # **********************************************************************************************
     def __getitem__(self, xpath):
         """
-        Public function []:
-        return _vault[where1/where2/.../whereN]
+        Public operator: isntance[xpath]
+        return isntance._vault[where1/where2/.../whereN]
             AKA
-        return _vault[where1][where2]...[whereN]
+        return isntance._vault[where1][where2]...[whereN]
 
         If any of [where1][where2]...[whereN] are not found, exception IndexError will be raised
         """
         return self._vault._get(xpath, raise_exception = True)
     def get(self, xpath: str, if_not_found = None):
         """
-        Public function:
+        Public method: isntance.get(xpath: str, if_not_found = None)
         return _vault[where1/where2/.../whereN]
             AKA
         return _vault[where1][where2]...[whereN]

@@ -1,7 +1,11 @@
 Help on package n0vault:
 
 NAME
-    n0vault - # 0.01 = 2021-03-06 = Initial version
+    n0vault
+
+DESCRIPTION
+    # 0.01 = 2021-03-06 = Initial version
+    # 0.02 = 2021-07-19 = Added functionality to enter sensitive data without easy retrieving
 
 PACKAGE CONTENTS
     __main__
@@ -32,54 +36,94 @@ CLASSES
      |  Methods defined here:
      |  
      |  __getitem__(self, xpath)
-     |      Public function []:
-     |      return _vault[where1/where2/.../whereN]
+     |      Public operator: isntance[xpath]
+     |      return isntance._vault[where1/where2/.../whereN]
      |          AKA
-     |      return _vault[where1][where2]...[whereN]
+     |      return isntance._vault[where1][where2]...[whereN]
      |      
      |      If any of [where1][where2]...[whereN] are not found, exception IndexError will be raised
      |  
      |  __init__(self, vault_file_name: str = None, encrypted=True, password: str = None, key=None)
-     |      Initialize self.  See help(type(self)) for accurate signature.
+     |      Constructor for n0Vault
+     |      
+     |      vault_file_name: str = None,    storage file name
+     |      encrypted = True,               save as encrypted by default
+     |      password: str = None,           password will be used during saving
+     |      key = None                      256-bit Key encrypted with base64
      |  
      |  __setitem__(self, xpath: str, new_value)
-     |      Set self[key] to value.
+     |      Public operator: isntance[xpath] = new_value
+     |      
+     |      Update isntance._vault with {xpath:new_value}
      |  
      |  delete(self, xpath) -> dict
-     |      # **********************************************************************************************
+     |      Public method: isntance.delete(xpath)
+     |      
+     |      Delete item 'xpath' from isntance._vault
      |  
      |  get(self, xpath: str, if_not_found=None)
-     |      Public function:
+     |      Public method: isntance.get(xpath: str, if_not_found = None)
      |      return _vault[where1/where2/.../whereN]
      |          AKA
      |      return _vault[where1][where2]...[whereN]
      |      
      |      If any of [where1][where2]...[whereN] are not found, if_not_found will be returned
      |  
-     |  is_bit_set(self, flag: int, bit_offset: int = 0, binary_mask: int = 1) -> bool
-     |      # **********************************************************************************************
+     |  is_bit_set(self, bit_offset: int = 0, binary_mask: int = 1, bytes_array: int = None) -> int
+     |      Public method: isntance.is_bit_set(bit_offset: int = 0, binary_mask: int = 0b1, bytes_array: int = None) -> int:
+     |      
+     |      Return bits' set from bit_offset of bytes_array/self.__flags and applied binary_mask
      |  
      |  load(self, vault_file_name: str)
-     |      # **********************************************************************************************
+     |      Public method: isntance.load(vault_file_name: str):
+     |      
+     |      Load 'vault_file_name' and decrypt it if it was encrypted.
      |  
      |  pop(self, xpath) -> dict
-     |      D.pop(k[,d]) -> v, remove specified key and return the corresponding value.
-     |      If key is not found, d is returned if given, otherwise KeyError is raised
+     |      Public method: isntance.pop(xpath)
+     |      
+     |      Return value associated with 'xpath' and delete item 'xpath' from isntance._vault
      |  
-     |  save(self, new_vault_file_name: str = None)
-     |      # **********************************************************************************************
+     |  save(self, new_vault_file_name: str = None, forbid_next_saving=False)
+     |      Public method: isntance.save(new_vault_file_name: str = None, forbid_next_saving = False):
+     |      
+     |      Save file depends of self._encrypted flag into encrypted or decrypted format.
+     |      if 3rd bit in self.__flags is already set previously, then Exception will be raised -- saving is forbidden.
      |  
-     |  set_bits(self, flag: int, bit_offset: int = 0, binary_mask: int = 1, bit_value: int = 1) -> bool
-     |      # **********************************************************************************************
+     |  set_bits(self, bytes_array: int, bits_value: int, bits_len: int = 1, bits_offset: int = 0, bits_in_bytes: int = 32) -> int
+     |      Public method: isntance.set_bits(bytes_array: int, bits_value: int, bits_len: int = 1, bits_offset: int = 0, bits_in_bytes: int = 32)
+     |      
+     |      Apply bits_value to bits_offset of bytes_array
+     |      
+     |      1) Prepare all bits mask depends of bits_in_bytes (bytes_array size): 0xFF, 0xFFFF, 0xFFFFFFFF
+     |          bits_in_bytes =  8              => bits_mask = b0000_0000__0000_0000___0000_0000__1111_1111
+     |          bits_in_bytes = 16              => bits_mask = b0000_0000__0000_0000___1111_1111__1111_1111
+     |          bits_in_bytes = 32              => bits_mask = b1111_1111__1111_1111___1111_1111__1111_1111
+     |      
+     |      2) Prepare the mask for bits place clearing, depends of bits_len and bits_offset
+     |          bits_len = 1, bits_offset = 0   => b0000_0000__0000_0000___0000_0000__0000_0001 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1111_1110
+     |          bits_len = 2, bits_offset = 0   => b0000_0000__0000_0000___0000_0000__0000_0011 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1111_1100
+     |          bits_len = 3, bits_offset = 0   => b0000_0000__0000_0000___0000_0000__0000_0111 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1111_1000
+     |          bits_len = 8, bits_offset = 0   => b0000_0000__0000_0000___0000_0000__1111_1111 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__0000_0000
+     |                                                                                                                                                           
+     |          bits_len = 1, bits_offset = 4   => b0000_0000__0000_0000___0000_0000__0001_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1110_1111
+     |          bits_len = 2, bits_offset = 4   => b0000_0000__0000_0000___0000_0000__0011_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1100_1111
+     |          bits_len = 3, bits_offset = 4   => b0000_0000__0000_0000___0000_0000__0111_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1000_1111
+     |          bits_len = 8, bits_offset = 4   => b0000_0000__0000_0000___0000_1111__1111_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_0000__0000_1111
+     |          
+     |      3) Clearing the bits place 
+     |      
+     |      4) Update the cleared place with bits_value
      |  
-     |  show(self) -> dict
-     |      # **********************************************************************************************
+     |  show(self, start_from=None) -> dict
+     |      Public method: isntance.show(start_from = None)
+     |      
+     |      Return json structure of isntance._vault or isntance._vault[start_from]
      |  
      |  update(self, xpath: Union[dict, str], new_value: str = None) -> dict
-     |      D.update([E, ]**F) -> None.  Update D from dict/iterable E and F.
-     |      If E is present and has a .keys() method, then does:  for k in E: D[k] = E[k]
-     |      If E is present and lacks a .keys() method, then does:  for k, v in E: D[k] = v
-     |      In either case, this is followed by: for k in F:  D[k] = F[k]
+     |      Public method: isntance.update(xpath: typing.Union[dict, str], new_value: str = None)
+     |      
+     |      Update isntance._vault with {xpath:new_value} or {xpath as a dictionary}
      |  
      |  ----------------------------------------------------------------------
      |  Data descriptors defined here:
@@ -184,10 +228,10 @@ CLASSES
      |  __hash__ = None
 
 DATA
-    annotations = _Feature((3, 7, 0, 'beta', 1), (4, 0, 0, 'alpha', 0), 16...
+    annotations = _Feature((3, 7, 0, 'beta', 1), (3, 10, 0, 'alpha', 0), 1...
     logger = <loguru.logger handlers=[(id=0, level=10, sink=<stderr>)]>
 
 FILE
-    c:\repo\n0vault\n0vault\__init__.py
+    d:\repo\n0vault\n0vault\__init__.py
 
 
