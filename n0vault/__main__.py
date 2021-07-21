@@ -107,5 +107,5 @@ if __name__ == "__main__":
         my_vault._encrypted = True
         
     if not args.encrypt is None:
-        print(f"Saving '{my_vault.vault_file_name}' as %s..." % ["DECRYPTED", "ENCRYPTED"][int(my_vault._encrypted)])
+        print(f"Saving '{my_vault.vault_file_name}' as %s%s..." % (["DECRYPTED", "ENCRYPTED"][int(my_vault._encrypted)], " (re-saving/updating/showing is forbidden)" if args.forbid else ""))
         my_vault.save(forbid_next_saving = args.forbid)
