@@ -1,5 +1,7 @@
 # 0.01 = 2021-03-06 = Initial version
 # 0.02 = 2021-07-19 = Added functionality to enter sensitive data without easy retrieving
+# 0.03 = 2021-08-04 Impossible easely adopt for 3.6, only for 3.7, because of some modules (for example: immutables) 
+#                   are not precompiled for 3.6 at pypi.org. So installing of Visual C/C++ (or MinGW) is required.
 import os
 import base64
 
@@ -94,7 +96,8 @@ class n0Vault(dict):
         elif isinstance(xpath, str):
             self._vault.update({xpath: new_value})
         else:
-            raise TypeError(f"Expected: xpath: typing.Union[dict, str], new_value: str\nReceived: {type(xpath)=}, {type(new_value)=}")
+            # raise TypeError(f"Expected: xpath: typing.Union[dict, str], new_value: str\nReceived: {type(xpath)=}, {type(new_value)=}")  # 3.8+
+            raise TypeError(f"Expected: xpath: typing.Union[dict, str], new_value: str\nReceived: xpath:{type(xpath)}, new_value:{type(new_value)}")
             
         return self._vault
     # **********************************************************************************************
@@ -202,7 +205,7 @@ class n0Vault(dict):
                         if not self.__password:
                             raise Exception(f"Password for loading is required")
                         cipher = AES.new(
-                            temp:=PBKDF2(self.__password, self.__key[:16]).read(32),    # 256-bit key
+                            PBKDF2(self.__password, self.__key[:16]).read(32),    # 256-bit key
                             AES.MODE_CBC,
                             cipher_iv
                         )
