@@ -1,7 +1,11 @@
-value1
-value2
-value3
-Not exists
+***** Opening/creating vault: test_n0vault.vault
+***** Set values in vault
+***** Get values from vault
+my_vault['group/subgroup/key1']='value1'
+my_vault.get('group/subgroup/key2')='value2'
+my_vault.get('group/subgroup/key3', 'Not exists')='value3'
+my_vault.get('group/subgroup/key4', 'Not exists')='Not exists'
+***** Show values from vault
 {
     "__sign": "n0Vault1",
     "group": {

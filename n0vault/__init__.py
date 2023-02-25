@@ -13,6 +13,7 @@ from Crypto.Hash import SHA256
 from pbkdf2 import PBKDF2
 # ##################################################################################################
 from n0struct import *
+DEBUG_MODE = False
 # ##################################################################################################
 class n0Vault(dict):
     _encrypted = False
@@ -244,11 +245,15 @@ class n0Vault(dict):
         if self.is_bit_set(2, 0b1):
             raise Exception(f"Saving of such n0Vault storage is forbidden")
         # ******************************************************************************************
-        def write_buffer(buffer, name):
+        def write_buffer(buffer: typing.Union[str, int, bytes], name_of_buffer: str):
+            if DEBUG_MODE:
+                n0debug_calc(buffer, name_of_buffer)
             if isinstance(buffer, str):
                 buffer = buffer.encode("utf-8")             # str -> bytes
-            if isinstance(buffer, int):
+            elif isinstance(buffer, int):
                 buffer = buffer.to_bytes(4, 'little')       # int32 -> bytes
+            elif not isinstance(buffer, bytes):
+                raise(Exception(f"Expected type str or int for '{buffer}', but got {type(buffer)}"))
             out_file.write(buffer)
         # ******************************************************************************************
         with open(new_vault_file_name or self.vault_file_name, "wb") as out_file:
