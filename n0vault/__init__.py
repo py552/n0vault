@@ -178,7 +178,9 @@ class n0Vault(dict):
         Load 'vault_file_name' and decrypt it if it was encrypted.
         """
         # ******************************************************************************************
-        def read_buffer(len_to_read: int, name_of_buffer: str):
+        def read_buffer(len_to_read: int = -1, name_of_buffer: str = "") -> bytes:
+            if not len_to_read:
+                len_to_read = -1
             buffer = in_file.read(len_to_read)
             if DEBUG_MODE:
                 n0debug_calc(buffer, name_of_buffer)
@@ -192,7 +194,7 @@ class n0Vault(dict):
                 if sign == b'{':
                     # Not-crypted storage
                     self.__vault_file_is_encrypted = False
-                    self._vault = n0dict((sign + read_buffer()).decode("utf-8"))
+                    self._vault = n0dict((sign + read_buffer(-1, "the whole json")).decode("utf-8"))
                 else:
                     # Encrypted storage
                     self.__vault_file_is_encrypted = True
@@ -221,7 +223,7 @@ class n0Vault(dict):
                     try:
                         buffer = Crypto.Util.Padding.unpad(
                                     cipher.decrypt(
-                                            read_buffer(None, "encrypted buffer")
+                                            read_buffer(-1, "encrypted buffer")
                                         ),
                                     AES.block_size
                         )
