@@ -181,10 +181,10 @@ class n0Vault(dict):
         def read_buffer(len_to_read: int = -1, name_of_buffer: str = "") -> bytes:
             if not len_to_read:
                 len_to_read = -1
-            buffer = in_file.read(len_to_read)
+            __buffer = in_file.read(len_to_read)
             if DEBUG_MODE:
-                n0debug_calc(buffer, name_of_buffer)
-            return buffer
+                n0debug_calc(__buffer, name_of_buffer)
+            return __buffer
         # ******************************************************************************************
 
         self.vault_file_name = vault_file_name
@@ -211,14 +211,14 @@ class n0Vault(dict):
                         cipher = AES.new(self.__key, AES.MODE_GCM, cipher_iv)
                     elif self.is_bit_set(0, 0b11) == 0b01:
                         if not self.__password:
-                            raise TypeError(f"Password for loading is required")
+                            raise TypeError("Password for loading is required")
                         cipher = AES.new(
                             PBKDF2(self.__password, self.__key[:16]).read(32),    # 256-bit key
                             AES.MODE_GCM,
                             cipher_iv
                         )
                     else:
-                        raise TypeError(f"Unknown format of encryption for n0Vault storage")
+                        raise TypeError("Unknown format of encryption for n0Vault storage")
                     # ******************************************************************************
                     try:
                         buffer = Crypto.Util.Padding.unpad(
@@ -228,16 +228,16 @@ class n0Vault(dict):
                                     AES.block_size
                         )
                     except:
-                        raise PermissionError(f"Incorrect password for n0Vault storage")
+                        raise PermissionError("Incorrect password for n0Vault storage")
                     # ******************************************************************************
                     # ******************************************************************************
                     calculated_control_sum = SHA256.new(data=cipher_iv + buffer).digest()
                     if control_sum != calculated_control_sum:
-                        raise TypeError(f"Incorrect control sum of n0Vault storage")
+                        raise TypeError("Incorrect control sum of n0Vault storage")
                     self._vault = n0dict(buffer.decode("utf-8"))
 
                 if self._vault.get("__sign") != self.__sign:
-                    raise TypeError(f"Incorrect format of n0Vault storage")
+                    raise TypeError("Incorrect format of n0Vault storage")
         else:
             self._vault = n0dict({"__sign": self.__sign})
         return self._vault
@@ -250,17 +250,19 @@ class n0Vault(dict):
         if 3rd bit in self.__flags is already set previously, then Exception will be raised -- saving is forbidden.
         """
         if self.is_bit_set(2, 0b1):
-            raise PermissionError(f"Saving of such n0Vault storage is forbidden")
+            raise PermissionError("Saving of such n0Vault storage is forbidden")
         # ******************************************************************************************
-        def write_buffer(buffer: typing.Union[str, int, bytes], name_of_buffer: str):
+        def write_buffer(_buffer: typing.Union[str, int, bytes], name_of_buffer: str):
             if DEBUG_MODE:
-                n0debug_calc(buffer, name_of_buffer)
-            if isinstance(buffer, str):
-                buffer = buffer.encode("utf-8")             # str -> bytes
-            elif isinstance(buffer, int):
-                buffer = buffer.to_bytes(4, 'little')       # int32 -> bytes
-            elif not isinstance(buffer, bytes):
-                raise(TypeError(f"Expected type str or int for '{buffer}', but got {type(buffer)}"))
+                n0debug_calc(_buffer, name_of_buffer)
+            if isinstance(_buffer, str):
+                buffer = _buffer.encode("utf-8")            # str -> bytes
+            elif isinstance(_buffer, int):
+                buffer = _buffer.to_bytes(4, 'little')      # int32 -> bytes
+            elif isinstance(_buffer, bytes):
+                buffer = _buffer                            # request of sonarcloud.io
+            else:
+                raise TypeError(f"Expected type str or int for '{_buffer}', but got {type(_buffer)}")
             out_file.write(buffer)
         # ******************************************************************************************
         with open(new_vault_file_name or self.vault_file_name, "wb") as out_file:

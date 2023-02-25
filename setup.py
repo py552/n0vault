@@ -16,7 +16,7 @@ else:
                 if "Version" in pkg_info:
                     _version = pkg_info.get("Version")
                 else:
-                    raise Exception("Version is not found in " + pkg_info_file + ":\n" + str(pkg_info))
+                    raise ModuleNotFoundError("Version is not found in " + pkg_info_file + ":\n" + str(pkg_info))
             break
     else:
         full_list_of_dirs_where_we_search = [my_version_file]
