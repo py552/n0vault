@@ -177,8 +177,13 @@ class n0Vault(dict):
 
         Load 'vault_file_name' and decrypt it if it was encrypted.
         """
-        def read_buffer(len_to_read = None, name = None):
-            return in_file.read(len_to_read)
+        # ******************************************************************************************
+        def read_buffer(len_to_read: int, name_of_buffer: str):
+            buffer = in_file.read(len_to_read)
+            if DEBUG_MODE:
+                n0debug_calc(buffer, name_of_buffer)
+            return buffer
+        # ******************************************************************************************
 
         self.vault_file_name = vault_file_name
         if os.path.exists(self.vault_file_name):
@@ -193,7 +198,7 @@ class n0Vault(dict):
                     self.__vault_file_is_encrypted = True
                     sign += read_buffer(7, "sign")
                     if sign.decode("utf-8") != self.__sign:
-                        raise Exception(f"File '{vault_file_name}' is not n0Vault storage")
+                        raise TypeError(f"File '{vault_file_name}' is not n0Vault storage")
                     # 4 bytes/32-bits flag
                     self.__flags = int.from_bytes(read_buffer(4, "flags"), 'little')
                     cipher_iv = read_buffer(16, "cipher_iv")
@@ -204,14 +209,14 @@ class n0Vault(dict):
                         cipher = AES.new(self.__key, AES.MODE_GCM, cipher_iv)
                     elif self.is_bit_set(0, 0b11) == 0b01:
                         if not self.__password:
-                            raise Exception(f"Password for loading is required")
+                            raise TypeError(f"Password for loading is required")
                         cipher = AES.new(
                             PBKDF2(self.__password, self.__key[:16]).read(32),    # 256-bit key
                             AES.MODE_GCM,
                             cipher_iv
                         )
                     else:
-                        raise Exception(f"Unknown format of encryption for n0Vault storage")
+                        raise TypeError(f"Unknown format of encryption for n0Vault storage")
                     # ******************************************************************************
                     try:
                         buffer = Crypto.Util.Padding.unpad(
@@ -221,16 +226,16 @@ class n0Vault(dict):
                                     AES.block_size
                         )
                     except:
-                        raise Exception(f"Incorrect password for n0Vault storage")
+                        raise PermissionError(f"Incorrect password for n0Vault storage")
                     # ******************************************************************************
                     # ******************************************************************************
                     calculated_control_sum = SHA256.new(data=cipher_iv + buffer).digest()
                     if control_sum != calculated_control_sum:
-                        raise Exception(f"Incorrect control sum of n0Vault storage")
+                        raise TypeError(f"Incorrect control sum of n0Vault storage")
                     self._vault = n0dict(buffer.decode("utf-8"))
 
                 if self._vault.get("__sign") != self.__sign:
-                    raise Exception(f"Incorrect format of n0Vault storage")
+                    raise TypeError(f"Incorrect format of n0Vault storage")
         else:
             self._vault = n0dict({"__sign": self.__sign})
         return self._vault
@@ -243,7 +248,7 @@ class n0Vault(dict):
         if 3rd bit in self.__flags is already set previously, then Exception will be raised -- saving is forbidden.
         """
         if self.is_bit_set(2, 0b1):
-            raise Exception(f"Saving of such n0Vault storage is forbidden")
+            raise PermissionError(f"Saving of such n0Vault storage is forbidden")
         # ******************************************************************************************
         def write_buffer(buffer: typing.Union[str, int, bytes], name_of_buffer: str):
             if DEBUG_MODE:
@@ -253,7 +258,7 @@ class n0Vault(dict):
             elif isinstance(buffer, int):
                 buffer = buffer.to_bytes(4, 'little')       # int32 -> bytes
             elif not isinstance(buffer, bytes):
-                raise(Exception(f"Expected type str or int for '{buffer}', but got {type(buffer)}"))
+                raise(TypeError(f"Expected type str or int for '{buffer}', but got {type(buffer)}"))
             out_file.write(buffer)
         # ******************************************************************************************
         with open(new_vault_file_name or self.vault_file_name, "wb") as out_file:

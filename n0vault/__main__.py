@@ -53,9 +53,9 @@ if __name__ == "__main__":
                         break
                     print("*** Entered empty value name")
             else:
-                raise Exception(f"Expected 0..2 items list. Received {len_pair} items list {pair}")
+                raise ValueError(f"Expected from 0 (for entering from keyborad) till 2 items list. Received {len_pair} items list {pair}")
         else:
-            raise Exception(f"Expected list of lists. Received: {args.update}")
+            raise ValueError(f"Expected list of lists. Received: {args.update}")
 
         while True:
             value1 = getpass.getpass(f"Enter value assosiated with '{key}' (typed characters will not be shown):")
