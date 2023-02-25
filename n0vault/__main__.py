@@ -28,19 +28,19 @@ if __name__ == "__main__":
 
     args = parser.parse_args(sys.argv[1:])
 
-    if isinstance(args.vault, list):
+    if isinstance(args.vault, (tuple, list)):
         __vault_file_name = args.vault[0]
     elif isinstance(args.vault, str):
         __vault_file_name = args.vault
     else:
-        __vault_file_name = None,
+        __vault_file_name = None
 
-    if isinstance(args.password, list):
+    if isinstance(args.password, (tuple, list)):
         __password = args.password[0]
     elif isinstance(args.password, str):
         __password = args.password
     else:
-        __password = None,
+        __password = None
 
     my_vault = n0Vault(vault_file_name = __vault_file_name,
                        password = __password,
@@ -67,7 +67,7 @@ if __name__ == "__main__":
                         break
                     print("*** Entered empty value name")
             else:
-                raise ValueError(f"Expected from 0 (for entering from keyborad) till 2 items list. Received {len_pair} items list {pair}")
+                raise ValueError(f"Expected from 0 (for entering from keyboard) till 2 items list. Received {len_pair} items list {pair}")
         else:
             raise ValueError(f"Expected list of lists. Received: {args.update}")
 

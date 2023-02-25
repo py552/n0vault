@@ -6,7 +6,7 @@ NAME
 DESCRIPTION
     # 0.01 = 2021-03-06 = Initial version
     # 0.02 = 2021-07-19 = Added functionality to enter sensitive data without easy retrieving
-    # 0.03 = 2021-08-04 Impossible easely adopt for 3.6, only for 3.7, because of some modules (for example: immutables) 
+    # 0.03 = 2021-08-04 Impossible easely adopt for 3.6, only for 3.7, because of some modules (for example: immutables)
     #                   are not precompiled for 3.6 at pypi.org. So installing of Visual C/C++ (or MinGW) is required.
     # 0.04 = 2023-02-25 = AES.MODE_CBC -> AES.MODE_GCM accoding sonarcloud.io: Use secure mode and padding scheme.
 
@@ -108,13 +108,13 @@ CLASSES
      |          bits_len = 2, bits_offset = 0   => b0000_0000__0000_0000___0000_0000__0000_0011 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1111_1100
      |          bits_len = 3, bits_offset = 0   => b0000_0000__0000_0000___0000_0000__0000_0111 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1111_1000
      |          bits_len = 8, bits_offset = 0   => b0000_0000__0000_0000___0000_0000__1111_1111 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__0000_0000
-     |                                                                                                                                                           
+     |      
      |          bits_len = 1, bits_offset = 4   => b0000_0000__0000_0000___0000_0000__0001_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1110_1111
      |          bits_len = 2, bits_offset = 4   => b0000_0000__0000_0000___0000_0000__0011_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1100_1111
      |          bits_len = 3, bits_offset = 4   => b0000_0000__0000_0000___0000_0000__0111_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1000_1111
      |          bits_len = 8, bits_offset = 4   => b0000_0000__0000_0000___0000_1111__1111_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_0000__0000_1111
-     |          
-     |      3) Clearing the bits place 
+     |      
+     |      3) Clearing the bits place
      |      
      |      4) Update the cleared place with bits_value
      |  
@@ -231,6 +231,8 @@ CLASSES
      |  __hash__ = None
 
 DATA
+    AES_MODE = 3
+    DEBUG_MODE = False
     annotations = _Feature((3, 7, 0, 'beta', 1), (4, 0, 0, 'alpha', 0), 16...
     compiled_regexp_mask_pan = re.compile('(([^0-9]|^)?(000)?[456][0-9]{5}...
     logger = <loguru.logger handlers=[(id=0, level=10, sink=<stderr>)]>

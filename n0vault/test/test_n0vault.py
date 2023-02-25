@@ -25,9 +25,8 @@ def test_1():
 
     print("***** Show values from vault")
     print(my_vault.show())
-    
-    # print("***** Save vault")
-    # my_vault.save()
+
+    # saveing of vault my_vault.save() is not required for sanity testing
 
 def main():
     test_1()

@@ -1,6 +1,6 @@
 # 0.01 = 2021-03-06 = Initial version
 # 0.02 = 2021-07-19 = Added functionality to enter sensitive data without easy retrieving
-# 0.03 = 2021-08-04 Impossible easely adopt for 3.6, only for 3.7, because of some modules (for example: immutables) 
+# 0.03 = 2021-08-04 Impossible easely adopt for 3.6, only for 3.7, because of some modules (for example: immutables)
 #                   are not precompiled for 3.6 at pypi.org. So installing of Visual C/C++ (or MinGW) is required.
 # 0.04 = 2023-02-25 = AES.MODE_CBC -> AES.MODE_GCM accoding sonarcloud.io: Use secure mode and padding scheme.
 import os
@@ -14,6 +14,14 @@ from pbkdf2 import PBKDF2
 # ##################################################################################################
 from n0struct import *
 DEBUG_MODE = False
+# AES_MODE = AES.MODE_CBC # original
+# https://www.techtarget.com/whatis/definition/initialization-vector-IV
+AES_MODE = AES.MODE_CFB
+# https://rules.sonarsource.com/java/RSPEC-5542
+# AES_MODE = AES.MODE_GCM # recommended by sonarcloud.io, but: 'GcmMode' object has no attribute 'iv'
+# AES_MODE = AES.MODE_CCM # recommended by sonarcloud.io, but: 'CcmMode' object has no attribute 'iv'
+# AES_MODE = AES.MODE_EAX # recommended by sonarcloud.io, but: 'EaxMode' object has no attribute 'iv'
+# AES_MODE = AES.MODE_OCB # recommended by sonarcloud.io, but: 'OcbMode' object has no attribute 'iv'
 # ##################################################################################################
 class n0Vault(dict):
     _encrypted = False
@@ -64,7 +72,7 @@ class n0Vault(dict):
     ):
         """
         Constructor for n0Vault
-        
+
         vault_file_name: str = None,    storage file name
         encrypted = True,               save as encrypted by default
         password: str = None,           password will be used during saving
@@ -81,7 +89,7 @@ class n0Vault(dict):
     def __setitem__(self, xpath: str, new_value):
         """
         Public operator: isntance[xpath] = new_value
-        
+
         Update isntance._vault with {xpath:new_value}
         """
         self._vault[xpath] = new_value
@@ -90,7 +98,7 @@ class n0Vault(dict):
     def update(self, xpath: typing.Union[dict, str], new_value: str = None) -> dict:
         """
         Public method: isntance.update(xpath: typing.Union[dict, str], new_value: str = None)
-        
+
         Update isntance._vault with {xpath:new_value} or {xpath as a dictionary}
         """
         if isinstance(xpath, (dict, n0dict)):
@@ -99,13 +107,13 @@ class n0Vault(dict):
             self._vault.update({xpath: new_value})
         else:
             raise TypeError(f"Expected: xpath: typing.Union[dict, str], new_value: str\nReceived: xpath:{type(xpath)}, new_value:{type(new_value)}")
-            
+
         return self._vault
     # **********************************************************************************************
     def delete(self, xpath) -> dict:
         """
         Public method: isntance.delete(xpath)
-        
+
         Delete item 'xpath' from isntance._vault
         """
         return self._vault.delete(xpath)
@@ -113,7 +121,7 @@ class n0Vault(dict):
     def pop(self, xpath) -> dict:
         """
         Public method: isntance.pop(xpath)
-        
+
         Return value associated with 'xpath' and delete item 'xpath' from isntance._vault
         """
         return self._vault.pop(xpath)
@@ -121,7 +129,7 @@ class n0Vault(dict):
     def show(self, start_from = None) -> dict:
         """
         Public method: isntance.show(start_from = None)
-        
+
         Return json structure of isntance._vault or isntance._vault[start_from]
         """
         return json.dumps(self._vault[start_from] if start_from else self._vault, indent = 4)
@@ -129,27 +137,27 @@ class n0Vault(dict):
     def set_bits(self, bytes_array: int, bits_value: int, bits_len: int = 1, bits_offset: int = 0, bits_in_bytes: int = 32) -> int:
         """
         Public method: isntance.set_bits(bytes_array: int, bits_value: int, bits_len: int = 1, bits_offset: int = 0, bits_in_bytes: int = 32)
-        
+
         Apply bits_value to bits_offset of bytes_array
-        
+
         1) Prepare all bits mask depends of bits_in_bytes (bytes_array size): 0xFF, 0xFFFF, 0xFFFFFFFF
             bits_in_bytes =  8              => bits_mask = b0000_0000__0000_0000___0000_0000__1111_1111
             bits_in_bytes = 16              => bits_mask = b0000_0000__0000_0000___1111_1111__1111_1111
             bits_in_bytes = 32              => bits_mask = b1111_1111__1111_1111___1111_1111__1111_1111
-        
+
         2) Prepare the mask for bits place clearing, depends of bits_len and bits_offset
             bits_len = 1, bits_offset = 0   => b0000_0000__0000_0000___0000_0000__0000_0001 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1111_1110
             bits_len = 2, bits_offset = 0   => b0000_0000__0000_0000___0000_0000__0000_0011 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1111_1100
             bits_len = 3, bits_offset = 0   => b0000_0000__0000_0000___0000_0000__0000_0111 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1111_1000
             bits_len = 8, bits_offset = 0   => b0000_0000__0000_0000___0000_0000__1111_1111 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__0000_0000
-                                                                                                                                                             
+
             bits_len = 1, bits_offset = 4   => b0000_0000__0000_0000___0000_0000__0001_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1110_1111
             bits_len = 2, bits_offset = 4   => b0000_0000__0000_0000___0000_0000__0011_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1100_1111
             bits_len = 3, bits_offset = 4   => b0000_0000__0000_0000___0000_0000__0111_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_1111__1000_1111
             bits_len = 8, bits_offset = 4   => b0000_0000__0000_0000___0000_1111__1111_0000 => clear_bits_mask = b1111_1111__1111_1111___1111_0000__0000_1111
-            
-        3) Clearing the bits place 
-        
+
+        3) Clearing the bits place
+
         4) Update the cleared place with bits_value
         """
         all_bits_mask = (1 << bits_in_bytes) - 1
@@ -166,7 +174,7 @@ class n0Vault(dict):
     ) -> int:
         """
         Public method: isntance.is_bit_set(bit_offset: int = 0, binary_mask: int = 0b1, bytes_array: int = None) -> int:
-        
+
         Return bits' set from bit_offset of bytes_array/self.__flags and applied binary_mask
         """
         return ((bytes_array or self.__flags) >> bit_offset) & binary_mask
@@ -208,13 +216,13 @@ class n0Vault(dict):
                     # ******************************************************************************
                     # ******************************************************************************
                     if self.is_bit_set(0, 0b11) == 0b00:
-                        cipher = AES.new(self.__key, AES.MODE_GCM, cipher_iv)
+                        cipher = AES.new(self.__key, AES_MODE, cipher_iv)
                     elif self.is_bit_set(0, 0b11) == 0b01:
                         if not self.__password:
                             raise TypeError("Password for loading is required")
                         cipher = AES.new(
                             PBKDF2(self.__password, self.__key[:16]).read(32),    # 256-bit key
-                            AES.MODE_GCM,
+                            AES_MODE,
                             cipher_iv
                         )
                     else:
@@ -255,7 +263,7 @@ class n0Vault(dict):
         def write_buffer(buffer: typing.Union[str, int, bytes], name_of_buffer: str):
             if DEBUG_MODE:
                 n0debug_calc(buffer, name_of_buffer)
-                
+
             if isinstance(buffer, bytes):
                 __buffer = buffer                           # request of sonarcloud.io
             else:
@@ -275,10 +283,10 @@ class n0Vault(dict):
                     self.__flags = self.set_bits(bytes_array = self.__flags, bits_value = 0b01, bits_len = 2, bits_offset = 0)
                     cipher = AES.new(
                         PBKDF2(self.__password, self.__key[:16]).read(32),          # Generate 256-bit key
-                        AES.MODE_GCM
+                        AES_MODE
                     )
                 else:
-                    cipher = AES.new(self.__key, AES.MODE_GCM)
+                    cipher = AES.new(self.__key, AES_MODE)
                 write_buffer(self.__sign,  "sign")
                 if forbid_next_saving:
                     self.__flags = self.set_bits(bytes_array = self.__flags, bits_value = 0b1, bits_len = 1, bits_offset = 2)
