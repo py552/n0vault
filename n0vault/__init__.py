@@ -252,18 +252,20 @@ class n0Vault(dict):
         if self.is_bit_set(2, 0b1):
             raise PermissionError("Saving of such n0Vault storage is forbidden")
         # ******************************************************************************************
-        def write_buffer(_buffer: typing.Union[str, int, bytes], name_of_buffer: str):
+        def write_buffer(buffer: typing.Union[str, int, bytes], name_of_buffer: str):
             if DEBUG_MODE:
-                n0debug_calc(_buffer, name_of_buffer)
-            if isinstance(_buffer, str):
-                buffer = _buffer.encode("utf-8")            # str -> bytes
-            elif isinstance(_buffer, int):
-                buffer = _buffer.to_bytes(4, 'little')      # int32 -> bytes
-            elif isinstance(_buffer, bytes):
-                buffer = _buffer                            # request of sonarcloud.io
+                n0debug_calc(buffer, name_of_buffer)
+                
+            if isinstance(buffer, bytes):
+                __buffer = buffer                           # request of sonarcloud.io
             else:
-                raise TypeError(f"Expected type str or int for '{_buffer}', but got {type(_buffer)}")
-            out_file.write(buffer)
+                if isinstance(buffer, str):
+                    __buffer = buffer.encode("utf-8")       # str -> bytes
+                elif isinstance(buffer, int):
+                    __buffer = buffer.to_bytes(4, 'little') # int32 -> bytes
+                else:
+                    raise TypeError(f"Expected type str or int for '{buffer}', but got {type(buffer)}")
+            out_file.write(__buffer)
         # ******************************************************************************************
         with open(new_vault_file_name or self.vault_file_name, "wb") as out_file:
             if self._encrypted is None:
@@ -282,20 +284,20 @@ class n0Vault(dict):
                     self.__flags = self.set_bits(bytes_array = self.__flags, bits_value = 0b1, bits_len = 1, bits_offset = 2)
                 write_buffer(self.__flags, "flags")
                 write_buffer(cipher.iv,    "cipher.iv")
-                buffer = n0pretty(self._vault, show_type=False, __indent_size = 0).encode("utf-8") # str -> bytes
-                write_buffer(SHA256.new(data=cipher.iv + buffer).digest(), "control_sum")
+                packed_json = n0pretty(self._vault, show_type=False, __indent_size = 0).encode("utf-8") # str -> bytes
+                write_buffer(SHA256.new(data=cipher.iv + packed_json).digest(), "control_sum")
                 write_buffer(
                             cipher.encrypt(
                                     Crypto.Util.Padding.pad(
-                                        buffer,
+                                        packed_json,
                                         AES.block_size
                                     )
                             ),
                             "encrypted buffer"
                 )
             else:
-                buffer = self.show().replace('\n', "\r\n").encode("utf-8")  # str -> bytes
-                write_buffer(buffer, "notcrypted buffer")
+                unpacked_json = self.show().replace('\n', "\r\n").encode("utf-8")  # str -> bytes
+                write_buffer(unpacked_json, "notcrypted buffer")
     # **********************************************************************************************
     def __getitem__(self, xpath):
         """
