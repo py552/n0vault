@@ -28,8 +28,22 @@ if __name__ == "__main__":
 
     args = parser.parse_args(sys.argv[1:])
 
-    my_vault = n0Vault(vault_file_name = args.vault[0] if isinstance(args.vault, list) else args.vault if isinstance(args.vault, str) else None,
-                       password = args.password[0] if isinstance(args.password, list) else None,
+    if isinstance(args.vault, list):
+        __vault_file_name = args.vault[0]
+    elif isinstance(args.vault, str):
+        __vault_file_name = args.vault
+    else:
+        __vault_file_name = None,
+
+    if isinstance(args.password, list):
+        __password = args.password[0]
+    elif isinstance(args.password, str):
+        __password = args.password
+    else:
+        __password = None,
+
+    my_vault = n0Vault(vault_file_name = __vault_file_name,
+                       password = __password,
                        encrypted = args.encrypt
     )
     if my_vault.is_bit_set(2, 0b1):

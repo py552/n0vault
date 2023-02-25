@@ -221,7 +221,7 @@ class n0Vault(dict):
                         raise TypeError("Unknown format of encryption for n0Vault storage")
                     # ******************************************************************************
                     try:
-                        buffer = Crypto.Util.Padding.unpad(
+                        decrypted_buffer = Crypto.Util.Padding.unpad(
                                     cipher.decrypt(
                                             read_buffer(-1, "encrypted buffer")
                                         ),
@@ -231,10 +231,10 @@ class n0Vault(dict):
                         raise PermissionError("Incorrect password for n0Vault storage")
                     # ******************************************************************************
                     # ******************************************************************************
-                    calculated_control_sum = SHA256.new(data=cipher_iv + buffer).digest()
+                    calculated_control_sum = SHA256.new(data=cipher_iv + decrypted_buffer).digest()
                     if control_sum != calculated_control_sum:
                         raise TypeError("Incorrect control sum of n0Vault storage")
-                    self._vault = n0dict(buffer.decode("utf-8"))
+                    self._vault = n0dict(decrypted_buffer.decode("utf-8"))
 
                 if self._vault.get("__sign") != self.__sign:
                     raise TypeError("Incorrect format of n0Vault storage")
